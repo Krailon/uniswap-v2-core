@@ -22,6 +22,7 @@ contract UniswapV2Pair is IUniswapV2Pair, UniswapV2ERC20 {
     uint112 private reserve0;           // uses single storage slot, accessible via getReserves
     uint112 private reserve1;           // uses single storage slot, accessible via getReserves
     uint32  private blockTimestampLast; // uses single storage slot, accessible via getReserves
+    uint256 private blockTimestampCreated; // used to enforce new pair freeze
 
     uint public price0CumulativeLast;
     uint public price1CumulativeLast;
@@ -67,6 +68,7 @@ contract UniswapV2Pair is IUniswapV2Pair, UniswapV2ERC20 {
         require(msg.sender == factory, 'UniswapV2: FORBIDDEN'); // sufficient check
         token0 = _token0;
         token1 = _token1;
+        blockTimestampCreated = block.timestamp;
     }
 
     // update reserves and, on the first call per block, price accumulators
@@ -160,6 +162,7 @@ contract UniswapV2Pair is IUniswapV2Pair, UniswapV2ERC20 {
         require(amount0Out > 0 || amount1Out > 0, 'UniswapV2: INSUFFICIENT_OUTPUT_AMOUNT');
         (uint112 _reserve0, uint112 _reserve1,) = getReserves(); // gas savings
         require(amount0Out < _reserve0 && amount1Out < _reserve1, 'UniswapV2: INSUFFICIENT_LIQUIDITY');
+        require(block.timestamp > blockTimestampCreated + FREEZE_TIME, 'UniswapV2: NEW_PAIR_FROZEN');
 
         uint balance0;
         uint balance1;
